@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - name: Typecheck with the pinned TypeScript (devDependency, 6.x)
+        run: bun run typecheck
+      - name: Typecheck with TypeScript 5.9 (consumers compile the source with their own compiler)
+        run: bun run typecheck:ts5.9
+      - name: Tests, purity guard included
+        run: bun run test

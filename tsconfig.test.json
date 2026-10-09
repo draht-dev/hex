@@ -1,0 +1,8 @@
+{
+  "//": "Everything else (adapters, contracts, tests) with Bun types.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": ["src/**/*", "test/**/*"]
+}

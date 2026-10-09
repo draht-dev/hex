@@ -1,0 +1,23 @@
+{
+  "//": "Strict build of the pure modules: ES2022 lib only, no DOM, no Node/Bun types, so window, document, setTimeout, fetch and process do not type-check here. The flags are deliberately at least as strict as the consumers that compile this source.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": [],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src/core/**/*", "src/ports/**/*", "src/app/**/*", "src/grid/**/*", "src/index.ts"]
+}

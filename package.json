@@ -1,0 +1,48 @@
+{
+  "name": "@draht/hex",
+  "version": "0.1.0",
+  "description": "Hexagonal hive navigation core and pure hex-grid math (geometry, keyboard intents, roving focus). Framework-free TypeScript source.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/draht-dev/hex.git"
+  },
+  "keywords": [
+    "hex",
+    "hexagonal-grid",
+    "axial-coordinates",
+    "keyboard-navigation",
+    "roving-tabindex",
+    "ports-and-adapters"
+  ],
+  "files": [
+    "src",
+    "README.md",
+    "ARCHITECTURE.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./core": "./src/core/index.ts",
+    "./ports": "./src/ports/index.ts",
+    "./app": "./src/app/index.ts",
+    "./adapters": "./src/adapters/index.ts",
+    "./contracts": "./src/contracts/index.ts",
+    "./grid": "./src/grid/index.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "typecheck:ts5.9": "node node_modules/typescript-5.9/bin/tsc --noEmit -p tsconfig.json && node node_modules/typescript-5.9/bin/tsc --noEmit -p tsconfig.test.json",
+    "test": "bun test",
+    "purity": "bun test test/purity.test.ts",
+    "check": "bun run typecheck && bun run typecheck:ts5.9 && bun run test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^6.0.2",
+    "typescript-5.9": "npm:typescript@5.9.3"
+  }
+}
