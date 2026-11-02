@@ -251,6 +251,13 @@ describe('keyIntent: unbound keys and key tables', () => {
     expect(keyIntent({ key: 'ArrowRight', code: 'ArrowRight' }, { keymap, orientation: 'flat' })).toEqual({ type: 'move', direction: 'NE', fallback: 'E' });
   });
 
+  test('dropping Enter leaves native-link activation to the browser', () => {
+    const keymap: Keymap = Object.fromEntries(Object.entries(DEFAULT_KEYMAP).filter(([name]) => name !== 'Enter'));
+    expect(keyIntent({ key: 'Enter', code: 'Enter' }, { keymap })).toBeNull();
+    expect(keyIntent({ key: 'Enter', code: 'NumpadEnter' }, { keymap })).toBeNull();
+    expect(keyIntent({ key: ' ', code: 'Space' }, { keymap })).toEqual({ type: 'activate' });
+  });
+
   test('a custom keymap replaces the default', () => {
     const keymap: Keymap = { Escape: { type: 'up' }, KeyS: { type: 'activate' }, KeyL: { type: 'move', angle: 100 } };
     expect(keyIntent({ key: 'ArrowUp', code: 'ArrowUp' }, { keymap })).toBeNull();

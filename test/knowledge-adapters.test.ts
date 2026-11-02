@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { MemoryKnowledgeRepository, ManualClock, MOCK_KNOWLEDGE } from '../src/adapters';
+import { MemoryKnowledgeRepository, ManualClock, MOCK_KNOWLEDGE, mountMockAreas } from '../src/adapters';
 import { CONTRACT_SEED, knowledgeRepositoryContract } from '../src/contracts';
-import { CELL_KINDS, createHiveNavigator, hexKey, canAttach, type HiveNavigator } from '../src';
+import { CELL_KINDS, createHiveNavigator, hexKey, canAttach, type HiveNavigator, type Level } from '../src';
 
 knowledgeRepositoryContract('MemoryKnowledgeRepository', (seed) => new MemoryKnowledgeRepository(seed));
 
@@ -83,6 +83,88 @@ describe('HiveNavigator over memory adapters', () => {
     await fresh.deleteCell(course.id);
     const noCourse = createHiveNavigator({ repo: fresh, clock: new ManualClock() });
     expect(await noCourse.attach({ level: root, coord: { q: 2, r: 1 }, kind: 'topic', title: 'x' })).toEqual({ ok: false, reason: 'not-adjacent' });
+  });
+});
+
+describe('mountMockAreas', () => {
+  const uni: Level = { ref: { kind: 'university', id: 'uni' }, title: 'Uni' };
+
+  test('re-parents the mock areas under the supplied root and keeps the levels under them', () => {
+    const seed = mountMockAreas(uni);
+    expect(seed.levels.map((l) => l.ref.id)).toEqual([
+      'uni',
+      'mock-area-a',
+      'mock-teacher-a',
+      'mock-student-b',
+      'mock-area-b',
+      'mock-student-c',
+      'mock-area-c',
+      'mock-teacher-d',
+    ]);
+    expect(seed.levels[0]).toEqual(uni);
+    expect(seed.levels[0]).not.toBe(uni);
+    for (const area of seed.levels.filter((l) => l.ref.kind === 'area')) expect(area.parent).toEqual(uni.ref);
+    for (const person of seed.levels.filter((l) => l.ref.kind === 'person')) {
+      const original = MOCK_KNOWLEDGE.levels.find((l) => l.ref.kind === person.ref.kind && l.ref.id === person.ref.id);
+      expect(person.parent).toEqual(original?.parent);
+      expect(person.personRole).toBe(original?.personRole);
+    }
+    expect(seed.levels.some((l) => l.ref.id === 'mock-uni')).toBe(false);
+    expect(seed.cells.some((c) => c.level.kind === 'university')).toBe(false);
+    expect(seed.cells.map((c) => c.id).sort()).toEqual(
+      MOCK_KNOWLEDGE.cells.filter((c) => c.level.kind !== 'university').map((c) => c.id).sort(),
+    );
+    // The link that starts on the mock university grid is dropped with those cells.
+    expect(seed.links).toEqual([
+      { from: 'person:mock-student-b:w2', to: 'person:mock-teacher-a:w2', kind: 'prerequisite' },
+    ]);
+    const seen = new Set<string>();
+    for (const c of seed.cells) {
+      const k = `${c.level.kind}/${c.level.id}@${hexKey(c.coord)}`;
+      expect(seen.has(k)).toBe(false);
+      seen.add(k);
+      const target = c.target;
+      if (target?.type === 'level') {
+        expect(seed.levels.some((l) => l.ref.kind === target.level.kind && l.ref.id === target.level.id)).toBe(true);
+      }
+    }
+  });
+
+  test('does not mutate the mock seed or the root passed in', () => {
+    const before = structuredClone(MOCK_KNOWLEDGE);
+    const root: Level = { ref: { kind: 'university', id: 'uni' }, title: 'Uni', handle: 'uni-handle' };
+    const seed = mountMockAreas(root);
+    (root as { title: string }).title = 'Changed';
+    (root.ref as { id: string }).id = 'changed';
+    expect(seed.levels[0]).toEqual({ ref: { kind: 'university', id: 'uni' }, title: 'Uni', handle: 'uni-handle' });
+    const area = seed.levels.find((l) => l.ref.id === 'mock-area-a')!;
+    (area as { title: string }).title = 'mutated';
+    (area.parent as { id: string }).id = 'mutated';
+    (seed.cells[0] as { title: string }).title = 'mutated';
+    expect(MOCK_KNOWLEDGE).toEqual(before);
+    // The area parent is its own copy, so rewriting it leaves the root ref alone.
+    expect(seed.levels[0]!.ref).toEqual({ kind: 'university', id: 'uni' });
+  });
+
+  test('the custom root is the hive root, and area breadcrumbs start there', async () => {
+    const repo = new MemoryKnowledgeRepository(mountMockAreas(uni));
+    const nav = createHiveNavigator({ repo, clock: new ManualClock() });
+    expect(await nav.rootLevel()).toEqual(uni);
+    const rootView = (await nav.openLevel(uni.ref))!;
+    expect(rootView.cells).toEqual([]);
+    expect(rootView.attachSlots).toEqual([{ q: 0, r: 0 }]);
+    expect(rootView.parent).toBeUndefined();
+    expect(rootView.children.map((l) => l.ref.id)).toEqual(['mock-area-a', 'mock-area-b', 'mock-area-c']);
+    const area = (await nav.openLevel({ kind: 'area', id: 'mock-area-a' }))!;
+    expect(area.parent?.ref).toEqual(uni.ref);
+    expect(area.path).toEqual([uni.ref, { kind: 'area', id: 'mock-area-a' }]);
+    expect(area.children.map((l) => l.ref.id)).toEqual(['mock-teacher-a', 'mock-student-b']);
+    const person = (await nav.openLevel({ kind: 'person', id: 'mock-student-b' }))!;
+    expect(person.path).toEqual([uni.ref, { kind: 'area', id: 'mock-area-a' }, { kind: 'person', id: 'mock-student-b' }]);
+  });
+
+  test('rejects a root that is not a university', () => {
+    expect(() => mountMockAreas({ ref: { kind: 'area', id: 'x' }, title: 'X' })).toThrow(/university/);
   });
 });
 
