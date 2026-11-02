@@ -34,7 +34,7 @@ The package ships TypeScript source and has no build step, so your toolchain com
 | `@draht/hex/core` | Hex math: `HexCoord`, `HEX_DIRECTIONS`, `hexNeighbor`, `directionTo`, `directionVector`, `hexDistance`, `hexRing`, `hexSpiral`, `hexToPlane`, `hexCorners`, … Hive model: `Level`, `Cell`, `CellKind`, `CELL_KINDS`, `isCellKind`, `CellLink`, `LevelView`, `neighborSlots`, `navigate`, `canAttach`, `attachSlots` |
 | `@draht/hex/ports` | Interfaces (types only): `KnowledgeRepository`, `Clock`, `HiveNavigator` |
 | `@draht/hex/app` | `createHiveNavigator({ repo, clock })` |
-| `@draht/hex/adapters` | `MemoryKnowledgeRepository`, `MOCK_KNOWLEDGE` (fictional sample data), `ManualClock` |
+| `@draht/hex/adapters` | `MemoryKnowledgeRepository`, `MOCK_KNOWLEDGE` (fictional sample data), `mountMockAreas` (those areas under your own university), `ManualClock` |
 | `@draht/hex/contracts` | `knowledgeRepositoryContract`, `CONTRACT_SEED`: a `bun:test` suite for your own repository adapters. Import it from test files only. |
 | `@draht/hex/grid` | Geometry (`gridPoint`, `gridPolygon`, `gridCorners`, `gridBounds`, `directionAngle`, `nearestDirection`, `nearestDirections`, `gridNeighbor`, `readingOrder`), keyboard (`keyIntent`, `DEFAULT_KEYMAP`, `UP_LEVEL_KEYS`), focus (`gridTabStop`, `gridAction`, `gridMove`, `focusableCells`) |
 | `@draht/hex` | Everything in `core`, `ports`, `app` and `grid` |
@@ -54,6 +54,15 @@ const east = await hive.step(view!.cells[0]!, 'E');       // neighbor view, or u
 ```
 
 To use your own data, implement `KnowledgeRepository` and run `knowledgeRepositoryContract('my-repo', (seed) => new MyRepo(seed))` from a `bun test` file.
+
+`mountMockAreas` hangs the fictional areas under a university you pass in. The returned seed's root is that level, each mock area's `parent` points at it, and the person levels, cells and links under the areas are copied along. The root grid has no cells of its own: the mock university's grid stays in `MOCK_KNOWLEDGE`, so the root is free for your own cells.
+
+```ts
+import { MemoryKnowledgeRepository, mountMockAreas } from '@draht/hex/adapters';
+
+const seed = mountMockAreas({ ref: { kind: 'university', id: 'uni' }, title: 'Uni' });
+const repo = new MemoryKnowledgeRepository(seed);
+```
 
 ### URLs are the app's job
 
@@ -125,6 +134,8 @@ Input order is the default because hives are usually laid out as a spiral with t
 - **Disabled current cell:** every intent except `up` returns `null`. Focus should never rest on a disabled cell; if it does, nothing happens until Tab moves it.
 - **Unknown current cell** (`null`, `undefined`, or an id no longer in `cells`): first / last still work, so Home/End lead back into the grid; move and activate return `null`.
 
+On a native link, `gridAction` is not needed for `activate` when `Enter` is removed from the keymap. `keyIntent` returns null for that key, so it never reaches `gridAction`, and the browser follows the link. See [Keyboard semantics](#keyboard-semantics).
+
 `gridMove(cells, currentId, { direction, fallback }, { isDisabled })` is the move step on its own and returns `{ id, direction } | null` by the same rules. Use it when you resolve moves without `gridAction`, for example to animate the step in the direction it went.
 
 ### Where to listen
@@ -164,7 +175,7 @@ Rules:
 - **IME input and dead keys pass through.** `isComposing`, key `'Process'` (an IME is handling the key; the first keydown of a composition arrives before `isComposing` is set) and key `'Dead'` (the start of an accented character) return `null`, even on a bound physical key and even if a custom keymap names them.
 - **Letters match by physical key** (`KeyboardEvent.code`). The Q/W/E, A/D, Z/X/C cluster keeps its shape on AZERTY and QWERTZ. Events without `code` fall back to the US layout. The printed character is not checked, so listen on the cells only (see [Where to listen](#where-to-listen)).
 - **Disabled cells** (`isDisabled`) never become the tab stop, a move target or an activation, and Home/End skip them. A move into an empty or disabled slot (after the fallback, if any) does nothing: it never jumps over the gap. A disabled current cell yields no action except `up`.
-- If your cells are native links, you can drop `Enter` from the keymap and let the browser follow the link.
+- If your cells are native links, drop `Enter` from the keymap (`Object.fromEntries(Object.entries(DEFAULT_KEYMAP).filter(([name]) => name !== 'Enter'))`) and let the browser follow the link. `gridAction` is not needed for `activate` on that key: `keyIntent` returns null for Enter and for Numpad Enter (its `key` is `Enter`, so it uses the same entry), the listener does not call `preventDefault` or `gridAction`, and the browser activates the link. Space stays an `activate` binding unless you remove it as well, and a native link does not follow on Space, so Space still goes through `gridAction`.
 
 `keymap` replaces the default table. Extend it with object spread, or build your own from `{ type: 'move', angle }`, `{ type: 'first' }`, `{ type: 'last' }`, `{ type: 'activate' }` and `{ type: 'up' }` entries. Entry names are `code` values (`KeyQ`, `ArrowUp`, `Space`) or `key` values (`Enter`, `Escape`), and `code` is tried first.
 

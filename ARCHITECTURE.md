@@ -89,7 +89,7 @@ interface HiveNavigator {
 
 | Port | File | Shape | Implementations here |
 |---|---|---|---|
-| `KnowledgeRepository` | `ports/knowledge-repository.ts` | `getRoot, getLevel, findLevelByHandle, listChildren, listCells, getCell, getCellAt, listLinks, saveCell, saveLink, deleteCell` (all async) | `MemoryKnowledgeRepository` (seeded with fictional `MOCK_KNOWLEDGE` by default) |
+| `KnowledgeRepository` | `ports/knowledge-repository.ts` | `getRoot, getLevel, findLevelByHandle, listChildren, listCells, getCell, getCellAt, listLinks, saveCell, saveLink, deleteCell` (all async) | `MemoryKnowledgeRepository` (seeded with fictional `MOCK_KNOWLEDGE` by default; `mountMockAreas` re-parents those areas under a caller-supplied university) |
 | `Clock` | `ports/clock.ts` | `now()`, `every(intervalMs, onTick) → stop` | `ManualClock` (time moves only on `advance(ms)`) |
 
 `KnowledgeRepository` is also the persistence boundary. Durable storage means a new adapter for this port, not a second port. Every adapter should pass `knowledgeRepositoryContract` from `@draht/hex/contracts`.
@@ -124,7 +124,7 @@ src/
   ports/       interfaces: HiveNavigator (driving), KnowledgeRepository and Clock (driven)
   app/         application service: createHiveNavigator
   grid/        pure grid math: geometry, keyboard intents, roving focus
-  adapters/    framework-free adapters: memory repository + mock data, manual clock
+  adapters/    framework-free adapters: memory repository, mock data (`mountMockAreas`), manual clock
   contracts/   reusable bun:test suites for adapters
   index.ts     core + ports + app + grid
 test/          domain, navigator, adapters, contract, grid and purity tests
