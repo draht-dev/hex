@@ -1,6 +1,6 @@
 {
   "name": "@draht/hex",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Hexagonal hive navigation core and pure hex-grid math (geometry, keyboard intents, roving focus). Framework-free TypeScript source.",
   "license": "MIT",
   "type": "module",
