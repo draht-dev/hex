@@ -15,14 +15,14 @@ The package is installed straight from Git, pinned to a tag. It is not published
 // package.json
 {
   "dependencies": {
-    "@draht/hex": "github:draht-dev/hex#v0.1.0"
+    "@draht/hex": "github:draht-dev/hex#v0.2.0"
   }
 }
 ```
 
 ```sh
-bun add github:draht-dev/hex#v0.1.0
-# or: npm install github:draht-dev/hex#v0.1.0
+bun add github:draht-dev/hex#v0.2.0
+# or: npm install github:draht-dev/hex#v0.2.0
 ```
 
 The package ships TypeScript source and has no build step, so your toolchain compiles it. Vite/Astro, the Angular CLI and Bun all handle this. Your TypeScript config needs `"moduleResolution": "bundler"` (or `"module": "preserve"`) and `lib` ES2022 or later. The source compiles cleanly under `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `verbatimModuleSyntax`. CI typechecks it with TypeScript 5.9 and with the pinned 6.x dev version, so either compiler works.
